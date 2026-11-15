@@ -1,6 +1,5 @@
 # B7 城市管理数字化平台 (CMPD)
-
-期末上机项目 · 城市管理数字化平台设计与实现
+ 城市管理数字化平台设计与实现
 
 ## 环境要求
 
@@ -16,8 +15,8 @@ pip install flask flask-cors pymysql
 ## 启动步骤
 
 ```bash
-# 1. 初始化数据库（建表 + 示例数据，只需执行一次）
-python init_db.py
+# 1. 链接数据库
+打开文档中的sql文件，并于本的mysql进行连接，同时可以启动Navicatls程序对后续前端进行操作
 
 # 2. 启动后端
 python app.py
@@ -26,7 +25,6 @@ python app.py
 #    http://127.0.0.1:5000/
 ```
 
-如 MySQL 密码不同，修改 `config.py` 中的 `MYSQL.password`。
 
 ## 项目结构
 
