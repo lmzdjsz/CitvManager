@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>B7 城市管理数字化平台</title>
+<script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://unpkg.com/echarts@5/dist/echarts.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI','Microsoft YaHei',sans-serif;background:#f4f6f9;color:#2d3a5c;font-size:14px}
+.topbar{height:56px;background:#fff;display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:0 1px 4px rgba(0,0,0,.06);position:relative;z-index:10}
+.logo{font-size:18px;font-weight:700;color:#2d3a5c;display:flex;align-items:center;gap:10px}
+.logo .badge{background:#ff5b5b;color:#fff;width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.logo .sub{font-size:12px;color:#9aa5b1;font-weight:400;margin-left:6px}
+.topbar .right{display:flex;gap:18px;font-size:12px;color:#6b7785;align-items:center}
+.topbar .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#36c46b;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.layout{display:flex;min-height:calc(100vh - 56px)}
+.sidebar{width:220px;background:#2d3a5c;color:#cfd8e3;flex-shrink:0;padding:16px 0}
+.menu-group{font-size:11px;color:#7a8aa3;padding:14px 20px 6px;letter-spacing:1px}
+.menu-item{padding:10px 20px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:.2s;font-size:13px}
+.menu-item:hover{background:#3a4a6b;color:#fff}
+.menu-item.active{background:#ff5b5b;color:#fff}
+.menu-item .ico{font-size:15px;width:20px;text-align:center}
+.main{flex:1;padding:20px 24px;overflow-x:auto}
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:16px;overflow:hidden}
+.card-h{padding:14px 18px;border-bottom:1px solid #f0f3f7;display:flex;justify-content:space-between;align-items:center}
+.card-h .t{font-size:14px;font-weight:600;color:#2d3a5c}
+.card-h .sm{font-size:11px;color:#9aa5b1;font-weight:400;margin-left:6px}
+.card-b{padding:16px 18px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.chart{height:280px}
+.chart.s{height:240px}
+.er{height:420px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f7f9fc;color:#6b7785;font-weight:600;padding:10px 12px;text-align:left;font-size:12px;position:sticky;top:0}
+td{padding:9px 12px;border-bottom:1px solid #f0f3f7;color:#2d3a5c}
+tr:hover td{background:#fafbfc}
+.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+.kpi .b{background:#fff;border-radius:10px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05);border-left:4px solid #ff5b5b}
+.kpi .b:nth-child(2){border-left-color:#4a8cff}
+.kpi .b:nth-child(3){border-left-color:#ff9f43}
+.kpi .b:nth-child(4){border-left-color:#36c46b}
+.kpi .lab{font-size:12px;color:#9aa5b1;margin-bottom:6px}
+.kpi .val{font-size:26px;font-weight:700;color:#2d3a5c}
+.kpi .sub{font-size:11px;color:#9aa5b1;margin-top:4px}
+.tag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.s-ok{background:#e6f9ee;color:#36c46b}
+.s-run{background:#fff3e0;color:#ff9f43}
+.s-wait{background:#eef2ff;color:#4a8cff}
+.s-bad{background:#fde8e8;color:#ff5b5b}
+.btn{padding:7px 16px;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;transition:.2s}
+.btn-pri{background:#ff5b5b;color:#fff}
+.btn-pri:hover{background:#e04848}
+.btn-sec{background:#f0f3f7;color:#6b7785}
+.btn-sec:hover{background:#e4e9f0}
+.btn-sm{padding:4px 10px;font-size:12px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.toolbar label{font-size:12px;color:#6b7785}
+.toolbar select,.toolbar input{padding:6px 10px;border:1px solid #e0e6ed;border-radius:6px;font-size:13px;background:#fff;color:#2d3a5c}
+.empty{text-align:center;padding:40px;color:#9aa5b1;font-size:13px}
+.loading{text-align:center;padding:40px;color:#9aa5b1}
+.modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:#fff;border-radius:10px;width:480px;max-width:90vw;max-height:90vh;overflow:auto;box-shadow:0 8px 32px rgba(0,0,0,.15)}
+.modal-h{padding:16px 20px;border-bottom:1px solid #f0f3f7;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.modal-h .x{cursor:pointer;color:#9aa5b1;font-size:18px}
+.modal-b{padding:20px}
+.form-row{margin-bottom:14px}
+.form-row label{display:block;font-size:12px;color:#6b7785;margin-bottom:5px}
+.form-row input,.form-row select,.form-row textarea{width:100%;padding:8px 10px;border:1px solid #e0e6ed;border-radius:6px;font-size:13px;color:#2d3a5c}
+.form-row textarea{resize:vertical;min-height:60px}
+.modal-f{padding:14px 20px;border-top:1px solid #f0f3f7;display:flex;justify-content:flex-end;gap:10px}
+.toast{position:fixed;top:70px;right:24px;padding:12px 20px;border-radius:8px;color:#fff;font-size:13px;z-index:200;box-shadow:0 4px 16px rgba(0,0,0,.15);animation:slideIn .3s}
+@keyframes slideIn{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.toast.ok{background:#36c46b}
+.toast.err{background:#ff5b5b}
+.mod{background:#fff;border-radius:10px;padding:20px;box-shadow:0 1px 3px rgba(0,0,0,.05);text-align:center}
+.mod .ic{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;margin:0 auto 12px;color:#fff}
+.mod h3{font-size:14px;margin-bottom:6px;color:#2d3a5c}
+.mod p{font-size:12px;color:#9aa5b1;line-height:1.6}
+.mod .num{margin-top:10px;font-size:11px;color:#ff5b5b;font-weight:700}
+.tbl-info{font-size:12px;color:#9aa5b1;padding:8px 18px;background:#fafbfc;border-bottom:1px solid #f0f3f7}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="logo"><div class="badge">B7</div> 城市管理数字化平台 <span class="sub">CMPD · City Management Platform</span></div>
+    <div class="right">
+      <span><span class="dot"></span>MySQL CMPD 已连接</span>
+      <span>127.0.0.1:5000</span>
+      <span>{{ now }}</span>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="menu-group">主面板</div>
+      <div class="menu-item" :class="{active:tab==='overview'}" @click="go('overview')"><span class="ico">📊</span> 平台概览</div>
+      <div class="menu-item" :class="{active:tab==='model'}" @click="go('model')"><span class="ico">🗄️</span> 数据模型</div>
+      <div class="menu-group">业务模块</div>
+      <div class="menu-item" :class="{active:tab==='infra'}" @click="go('infra')"><span class="ico">🛣️</span> 基础设施管理</div>
+      <div class="menu-item" :class="{active:tab==='event'}" @click="go('event')"><span class="ico">📣</span> 事件报告处理</div>
+      <div class="menu-item" :class="{active:tab==='dispatch'}" @click="go('dispatch')"><span class="ico">🚚</span> 资源调度</div>
+      <div class="menu-item" :class="{active:tab==='env'}" @click="go('env')"><span class="ico">🌿</span> 环境监测</div>
+      <div class="menu-group">基础数据管理</div>
+      <div class="menu-item" :class="{active:tab==='m_citizen'}" @click="go('m_citizen')"><span class="ico">👤</span> 市民管理</div>
+      <div class="menu-item" :class="{active:tab==='m_dept'}" @click="go('m_dept')"><span class="ico">🏢</span> 部门管理</div>
+      <div class="menu-item" :class="{active:tab==='m_worker'}" @click="go('m_worker')"><span class="ico">👷</span> 维修人员管理</div>
+      <div class="menu-item" :class="{active:tab==='m_trt'}" @click="go('m_trt')"><span class="ico">🚒</span> 维修资源管理</div>
+      <div class="menu-item" :class="{active:tab==='m_device'}" @click="go('m_device')"><span class="ico">📡</span> 监测设备管理</div>
+      <div class="menu-group">期末上机查询</div>
+      <div class="menu-item" :class="{active:tab==='q1'}" @click="go('q1')"><span class="ico">①</span> 查询1·区域内设施</div>
+      <div class="menu-item" :class="{active:tab==='q2'}" @click="go('q2')"><span class="ico">②</span> 查询2·事件处理情况</div>
+      <div class="menu-item" :class="{active:tab==='q3'}" @click="go('q3')"><span class="ico">③</span> 查询3·维修人员统计</div>
+      <div class="menu-item" :class="{active:tab==='q4'}" @click="go('q4')"><span class="ico">④</span> 查询4·区域综合分析</div>
+    </div>
+
+    <div class="main">
+      <!-- 概览 -->
+      <template v-if="tab==='overview'">
+        <div class="kpi">
+          <div class="b"><div class="lab">基础设施总数</div><div class="val">{{ ov.infra_total }}</div><div class="sub">在用 {{ ov.infra_ok }} · 报修 {{ ov.infra_bad }}</div></div>
+          <div class="b"><div class="lab">事件报告总数</div><div class="val">{{ ov.ev_total }}</div><div class="sub">完成率 {{ ov.ev_rate }}%</div></div>
+          <div class="b"><div class="lab">维修人员</div><div class="val">{{ ov.wk_total }}</div><div class="sub">在岗 {{ ov.wk_busy }} · 空闲 {{ ov.wk_idle }}</div></div>
+          <div class="b"><div class="lab">监测设备</div><div class="val">{{ ov.dev_total }}</div><div class="sub">在线 {{ ov.dev_online }} · 离线 {{ ov.dev_offline }}</div></div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="card-h"><div class="t">事件报告趋势 <span class="sm">ERT · 按日</span></div></div><div class="card-b"><div id="c_trend" class="chart"></div></div></div>
+          <div class="card"><div class="card-h"><div class="t">事件类型分布 <span class="sm">ERT.event_type</span></div></div><div class="card-b"><div id="c_type" class="chart"></div></div></div>
+        </div>
+        <div class="grid3">
+          <div class="mod"><div class="ic" style="background:#ff5b5b">🛣️</div><h3>市政基础设施管理</h3><p>道路、桥梁、照明、垃圾桶等设施的统一数字化登记，含唯一标识、GPS 位置、安装日期与维修记录。</p><div class="num">IT</div></div>
+          <div class="mod"><div class="ic" style="background:#4a8cff">📣</div><h3>事件报告与处理</h3><p>市民上报道路损坏、设施故障、垃圾堆积等事件，指派部门处理并跟踪进度、人员与结果。</p><div class="num">ERT</div></div>
+          <div class="mod"><div class="ic" style="background:#ff9f43">🚚</div><h3>资源分配与调度</h3><p>维修人员、车辆、工具的可用状态管理与任务派单，记录任务起止时间与执行情况。</p><div class="num">TST</div></div>
+          <div class="mod"><div class="ic" style="background:#36c46b">🌿</div><h3>环境监测</h3><p>各区域 AQI、噪音、温湿度、PM2.5 实时采集，监测设备在线状态与历史趋势分析。</p><div class="num">EDT</div></div>
+          <div class="mod"><div class="ic" style="background:#9b6dff">📈</div><h3>数据分析与决策</h3><p>按区域/时段统计事件数量、维修频率、资源使用效率，为管理部门决策提供数据支撑。</p><div class="num">ST</div></div>
+          <div class="mod"><div class="ic" style="background:#2d3a5c">🔍</div><h3>综合查询</h3><p>支持设施维修记录、事件处理进度、资源使用情况、环境趋势等多维查询需求。</p><div class="num">Q</div></div>
+        </div>
+      </template>
+
+      <!-- 数据模型 -->
+      <template v-if="tab==='model'">
+        <div class="card">
+          <div class="card-h"><div class="t">12 张数据表结构 <span class="sm">点击表名查看字段</span></div></div>
+          <div class="card-b" style="padding:0">
+            <table>
+              <tr><th>表代码</th><th>表名</th><th>字段数</th><th>主键</th><th>外键</th></tr>
+              <tr v-for="t in tables" :key="t.code" style="cursor:pointer" @click="selTable=t.code">
+                <td style="color:#ff5b5b;font-weight:700">{{ t.code }}</td>
+                <td>{{ t.name }}</td>
+                <td>{{ t.fields.length }}</td>
+                <td>{{ t.fields.filter(f=>f.pk).map(f=>f.n).join(',') }}</td>
+                <td>{{ t.fields.filter(f=>f.fk).map(f=>f.n).join(',') }}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="t">{{ selTable }} 表字段明细</div></div>
+          <div class="card-b" style="padding:0">
+            <table>
+              <tr><th>字段名</th><th>类型</th><th>主键</th><th>外键</th></tr>
+              <tr v-for="f in (tables.find(t=>t.code===selTable)||tables[0]).fields" :key="f.n">
+                <td style="font-weight:600">{{ f.n }}</td><td>{{ f.t }}</td>
+                <td>{{ f.pk?'✓':'' }}</td><td>{{ f.fk?'✓':'' }}</td>
+              </tr>
+            </table>
+          </div>
+        </div>
+        <div class="card"><div class="card-h"><div class="t">实体关系图（ER Diagram）</div></div><div class="card-b"><div id="c_er" class="er"></div></div></div>
+      </template>
+
+      <!-- 基础设施管理 -->
+      <template v-if="tab==='infra'">
+        <div class="toolbar">
+          <label>区域</label><select v-model="infraFilter.region" @change="loadInfra"><option value="">全部</option><option v-for="r in regionList" :key="r.region_name" :value="r.region_name">{{ r.region_name }}</option></select>
+          <label>类型</label><select v-model="infraFilter.type" @change="loadInfra"><option value="">全部</option><option v-for="t in infraTypes" :key="t" :value="t">{{ t }}</option></select>
+          <button class="btn btn-pri" @click="openModal('infra')">+ 新增设施</button>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="card-h"><div class="t">设施类型分布</div></div><div class="card-b"><div id="c_itype" class="chart s"></div></div></div>
+          <div class="card"><div class="card-h"><div class="t">各区域设施数量</div></div><div class="card-b"><div id="c_ireg" class="chart s"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="t">设施清单 <span class="sm">IT ⋈ RT · 共 {{ infraRows.length }} 条</span></div></div>
+          <div class="card-b" style="padding:0;max-height:420px;overflow:auto">
+            <table v-if="infraRows.length">
+              <tr><th>编号</th><th>名称</th><th>类型</th><th>区域</th><th>安装日期</th><th>状态</th><th>操作</th></tr>
+              <tr v-for="r in infraRows" :key="r.infra_id"><td>{{ r.infra_id }}</td><td>{{ r.infra_name }}</td><td>{{ r.infra_type }}</td><td>{{ r.region_name }}</td><td>{{ r.install_time }}</td><td><span class="tag" :class="infraSc(r.status)">{{ r.status_name }}</span></td><td><button class="btn btn-sec btn-sm" @click="editInfra(r)">编辑</button> <button class="btn btn-sec btn-sm" @click="delInfra(r.infra_id)">删除</button></td></tr>
+            </table>
+            <div v-else class="empty">暂无数据</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 事件报告处理 -->
+      <template v-if="tab==='event'">
+        <div class="toolbar">
+          <button class="btn btn-pri" @click="openModal('event')">+ 新增事件上报</button>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="card-h"><div class="t">事件来源类型占比</div></div><div class="card-b"><div id="c_etype" class="chart s"></div></div></div>
+          <div class="card"><div class="card-h"><div class="t">各区域事件报告数</div></div><div class="card-b"><div id="c_ereg" class="chart s"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="t">事件报告 <span class="sm">ERT ⋈ CT ⋈ RT · 共 {{ eventRows.length }} 条</span></div></div>
+          <div class="card-b" style="padding:0;max-height:420px;overflow:auto">
+            <table v-if="eventRows.length">
+              <tr><th>编号</th><th>标题</th><th>类型</th><th>区域</th><th>报告人</th><th>报告时间</th><th>状态</th><th>操作</th></tr>
+              <tr v-for="r in eventRows" :key="r.event_id"><td>{{ r.event_id }}</td><td>{{ r.event_title }}</td><td>{{ r.event_type }}</td><td>{{ r.region }}</td><td>{{ r.citizen }}</td><td>{{ r.report_time }}</td><td><span class="tag" :class="evSc(r.event_status)">{{ r.status_name }}</span></td><td><button class="btn btn-sec btn-sm" @click="editEvent(r)">编辑</button> <button class="btn btn-sec btn-sm" @click="delEvent(r.event_id)">删除</button></td></tr>
+            </table>
+            <div v-else class="empty">暂无数据</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 资源调度 -->
+      <template v-if="tab==='dispatch'">
+        <div class="toolbar">
+          <button class="btn btn-pri" @click="openModal('task')">+ 新增派单</button>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="card-h"><div class="t">资源类型构成 (TRT)</div></div><div class="card-b"><div id="c_rtype" class="chart s"></div></div></div>
+          <div class="card"><div class="card-h"><div class="t">任务状态分布 (TST)</div></div><div class="card-b"><div id="c_tstat" class="chart s"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="t">派单任务 <span class="sm">TST ⋈ ERT ⋈ WT ⋈ DT · 共 {{ taskRows.length }} 条</span></div></div>
+          <div class="card-b" style="padding:0;max-height:420px;overflow:auto">
+            <table v-if="taskRows.length">
+              <tr><th>任务ID</th><th>事件</th><th>处理人</th><th>部门</th><th>资源</th><th>开始</th><th>结束</th><th>状态</th><th>操作</th></tr>
+              <tr v-for="r in taskRows" :key="r.task_id"><td>{{ r.task_id }}</td><td>{{ r.event_title }}</td><td>{{ r.worker }}</td><td>{{ r.dept }}</td><td>{{ r.resource||'—' }}</td><td>{{ r.task_start||'—' }}</td><td>{{ r.task_end||'—' }}</td><td><span class="tag" :class="taskSc(r.task_status)">{{ r.status_name }}</span></td><td><button v-if="r.task_status!==3" class="btn btn-pri btn-sm" @click="finishTask(r.task_id)">完成</button></td></tr>
+            </table>
+            <div v-else class="empty">暂无数据</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 环境监测 -->
+      <template v-if="tab==='env'">
+        <div class="grid2">
+          <div class="card"><div class="card-h"><div class="t">PM2.5 / PM10 趋势</div></div><div class="card-b"><div id="c_pm" class="chart"></div></div></div>
+          <div class="card"><div class="card-h"><div class="t">噪音 / 温湿度趋势</div></div><div class="card-b"><div id="c_noise" class="chart"></div></div></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><div class="t">监测设备清单 <span class="sm">MDT ⋈ RT · 共 {{ devRows.length }} 条</span></div></div>
+          <div class="card-b" style="padding:0">
+            <table v-if="devRows.length">
+              <tr><th>设备ID</th><th>设备名称</th><th>编号</th><th>类型</th><th>区域</th><th>安装位置</th><th>安装时间</th><th>状态</th></tr>
+              <tr v-for="r in devRows" :key="r.device_id"><td>{{ r.device_id }}</td><td>{{ r.device_name }}</td><td>{{ r.device_no }}</td><td>{{ r.device_type }}</td><td>{{ r.region_name }}</td><td>{{ r.install_loc }}</td><td>{{ r.install_time }}</td><td><span class="tag" :class="r.online_status===1?'s-ok':'s-bad'">{{ r.status_name }}</span></td></tr>
+            </table>
+            <div v-else class="empty">暂无数据</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 查询1 -->
+      <template v-if="tab==='q1'">
+        <div class="card">
+          <div class="card-h"><div class="t">查询1 · 指定区域内市政基础设施信息</div></div>
+          <div class="card-b">
+            <div class="toolbar">
+              <label>区域</label><select v-model="q1.region"><option v-for="r in regionList" :key="r.region_name" :value="r.region_name">{{ r.region_name }}</option></select>
+              <label>设施类型</label><select v-model="q1.type"><option value="">全部</option><option v-for="t in infraTypes" :key="t" :value="t">{{ t }}</option></select>
+              <button class="btn btn-pri" @click="runQ1" :disabled="q1.loading">查询</button>
+            </div>
+            <div class="tbl-info">返回字段：设施编号 · 设施类型 · 安装日期 · 当前状态 · 区域</div>
+          </div>
+        </div>
+        <div class="card"><div class="card-h"><div class="t">查询结果 · 共 {{ q1.result.length }} 条</div></div>
+          <div class="card-b" style="padding:0;max-height:500px;overflow:auto">
+            <table v-if="q1.result.length">
+              <tr><th>设施编号</th><th>设施名称</th><th>设施类型</th><th>安装日期</th><th>当前状态</th><th>区域</th></tr>
+              <tr v-for="r in q1.result" :key="r.infra_id"><td>{{ r.infra_id }}</td><td>{{ r.infra_name }}</td><td>{{ r.infra_type }}</td><td>{{ r.install_time }}</td><td><span class="tag" :class="infraSc(r.status)">{{ r.status_name }}</span></td><td>{{ r.region_name }}</td></tr>
+            </table>
+            <div v-else class="empty">请选择区域后点击查询</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 查询2 -->
+      <template v-if="tab==='q2'">
+        <div class="card">
+          <div class="card-h"><div class="t">查询2 · 指定时间范围内事件报告及处理情况</div></div>
+          <div class="card-b">
+            <div class="toolbar">
+              <label>开始日期</label><input type="date" v-model="q2.s">
+              <label>结束日期</label><input type="date" v-model="q2.e">
+              <label>事件类型</label><select v-model="q2.type"><option value="">全部</option><option v-for="t in eventTypes" :key="t" :value="t">{{ t }}</option></select>
+              <button class="btn btn-pri" @click="runQ2" :disabled="q2.loading">查询</button>
+            </div>
+            <div class="tbl-info">返回字段：事件类型 · 报告时间 · 负责部门 · 处理人员 · 处理状态</div>
+          </div>
+        </div>
+        <div class="card"><div class="card-h"><div class="t">查询结果 · 共 {{ q2.result.length }} 条</div></div>
+          <div class="card-b" style="padding:0;max-height:500px;overflow:auto">
+            <table v-if="q2.result.length">
+              <tr><th>事件ID</th><th>标题</th><th>类型</th><th>报告时间</th><th>区域</th><th>负责部门</th><th>处理人员</th><th>处理状态</th></tr>
+              <tr v-for="r in q2.result" :key="r.event_id"><td>{{ r.event_id }}</td><td>{{ r.event_title }}</td><td>{{ r.event_type }}</td><td>{{ r.report_time }}</td><td>{{ r.region }}</td><td>{{ r.dept }}</td><td>{{ r.worker }}</td><td><span class="tag" :class="evSc(r.event_status)">{{ r.status_name }}</span></td></tr>
+            </table>
+            <div v-else class="empty">请选择时间范围后点击查询</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 查询3 -->
+      <template v-if="tab==='q3'">
+        <div class="card">
+          <div class="card-h"><div class="t">查询3 · 维修人员任务数量统计</div></div>
+          <div class="card-b">
+            <div class="toolbar">
+              <label>开始日期</label><input type="date" v-model="q3.s">
+              <label>结束日期</label><input type="date" v-model="q3.e">
+              <button class="btn btn-pri" @click="runQ3" :disabled="q3.loading">统计</button>
+            </div>
+            <div class="tbl-info">统计指标：任务总数 · 已完成数 · 完成率 · 平均处理时长(分钟)</div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="card-h"><div class="t">任务数对比</div></div><div class="card-b"><div id="c_q3a" class="chart s"></div></div></div>
+          <div class="card"><div class="card-h"><div class="t">平均处理时长(分钟)</div></div><div class="card-b"><div id="c_q3b" class="chart s"></div></div></div>
+        </div>
+        <div class="card"><div class="card-h"><div class="t">统计结果 · 共 {{ q3.result.length }} 人</div></div>
+          <div class="card-b" style="padding:0">
+            <table v-if="q3.result.length">
+              <tr><th>维修人员</th><th>所属部门</th><th>任务总数</th><th>已完成数</th><th>完成率</th><th>平均处理时长(分钟)</th></tr>
+              <tr v-for="r in q3.result" :key="r.worker"><td>{{ r.worker }}</td><td>{{ r.dept }}</td><td>{{ r.total }}</td><td>{{ r.done }}</td><td>{{ r.rate }}%</td><td>{{ r.avg_min||'—' }}</td></tr>
+            </table>
+            <div v-else class="empty">请选择时间范围后点击统计</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 查询4 -->
+      <template v-if="tab==='q4'">
+        <div class="card">
+          <div class="card-h"><div class="t">查询4 · 各区域事件统计 + 环境监测变化</div></div>
+          <div class="card-b">
+            <div class="toolbar">
+              <label>开始日期</label><input type="date" v-model="q4.s">
+              <label>结束日期</label><input type="date" v-model="q4.e">
+              <button class="btn btn-pri" @click="runQ4" :disabled="q4.loading">分析</button>
+            </div>
+            <div class="tbl-info">统计指标：各区域事件数 · 完成率 · 平均处理时长 + PM2.5/噪音变化趋势</div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:16px"><div class="card-h"><div class="t">各区域事件统计</div></div>
+          <div class="card-b" style="padding:0">
+            <table v-if="q4.stat.length">
+              <tr><th>区域</th><th>事件报告数</th><th>已完成数</th><th>完成率</th><th>平均处理时长(小时)</th></tr>
+              <tr v-for="r in q4.stat" :key="r.region"><td>{{ r.region }}</td><td>{{ r.total }}</td><td>{{ r.done }}</td><td>{{ r.rate }}%</td><td>{{ r.avg_hour||'—' }}</td></tr>
+            </table>
+            <div v-else class="empty">请选择时间范围后点击分析</div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="card"><div class="card-h"><div class="t">各区域 PM2.5 变化</div></div><div class="card-b"><div id="c_q4pm" class="chart"></div></div></div>
+          <div class="card"><div class="card-h"><div class="t">各区域噪音变化</div></div><div class="card-b"><div id="c_q4n" class="chart"></div></div></div>
+        </div>
+      </template>
+
+      <!-- 市民管理 -->
+      <template v-if="tab==='m_citizen'">
+        <div class="toolbar"><button class="btn btn-pri" @click="openModal('citizen')">+ 新增市民</button></div>
+        <div class="card"><div class="card-h"><div class="t">市民列表 <span class="sm">CT · 共 {{ citizenRows.length }} 条</span></div></div>
+          <div class="card-b" style="padding:0;max-height:560px;overflow:auto">
+            <table v-if="citizenRows.length"><tr><th>ID</th><th>姓名</th><th>电话</th><th>邮箱</th><th>注册时间</th><th>操作</th></tr>
+              <tr v-for="r in citizenRows" :key="r.citizen_id"><td>{{ r.citizen_id }}</td><td>{{ r.real_name }}</td><td>{{ r.phone }}</td><td>{{ r.email }}</td><td>{{ r.register_time }}</td><td><button class="btn btn-sec btn-sm" @click="editRow('citizen',r)">编辑</button> <button class="btn btn-sec btn-sm" @click="delRow('citizen',r.citizen_id)">删除</button></td></tr>
+            </table>
+            <div v-else class="empty">暂无数据</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 部门管理 -->
+      <template v-if="tab==='m_dept'">
+        <div class="toolbar"><button class="btn btn-pri" @click="openModal('dept')">+ 新增部门</button></div>
+        <div class="card"><div class="card-h"><div class="t">部门列表 <span class="sm">DT · 共 {{ deptRows.length }} 条</span></div></div>
+          <div class="card-b" style="padding:0;max-height:560px;overflow:auto">
+            <table v-if="deptRows.length"><tr><th>ID</th><th>部门名称</th><th>电话</th><th>地址</th><th>负责人</th><th>操作</th></tr>
+              <tr v-for="r in deptRows" :key="r.dept_id"><td>{{ r.dept_id }}</td><td>{{ r.dept_name }}</td><td>{{ r.dept_phone }}</td><td>{{ r.dept_addr }}</td><td>{{ r.manager }}</td><td><button class="btn btn-sec btn-sm" @click="editRow('dept',r)">编辑</button> <button class="btn btn-sec btn-sm" @click="delRow('dept',r.dept_id)">删除</button></td></tr>
+            </table>
+            <div v-else class="empty">暂无数据</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 维修人员管理 -->
+      <template v-if="tab==='m_worker'">
+        <div class="toolbar"><button class="btn btn-pri" @click="openModal('worker')">+ 新增人员</button></div>
+        <div class="card"><div class="card-h"><div class="t">维修人员列表 <span class="sm">WT · 共 {{ workerRows.length }} 条</span></div></div>
+          <div class="card-b" style="padding:0;max-height:560px;overflow:auto">
+            <table v-if="workerRows.length"><tr><th>ID</th><th>姓名</th><th>电话</th><th>岗位</th><th>入职日期</th><th>操作</th></tr>
+              <tr v-for="r in workerRows" :key="r.worker_id"><td>{{ r.worker_id }}</td><td>{{ r.worker_name }}</td><td>{{ r.worker_phone }}</td><td>{{ r.post }}</td><td>{{ r.hire_date }}</td><td><button class="btn btn-sec btn-sm" @click="editRow('worker',r)">编辑</button> <button class="btn btn-sec btn-sm" @click="delRow('worker',r.worker_id)">删除</button></td></tr>
+            </table>
+            <div v-else class="empty">暂无数据</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 维修资源管理 -->
+      <template v-if="tab==='m_trt'">
+        <div class="toolbar"><button class="btn btn-pri" @click="openModal('trt')">+ 新增资源</button></div>
+        <div class="card"><div class="card-h"><div class="t">维修资源列表 <span class="sm">TRT · 共 {{ trtRows.length }} 条</span></div></div>
+          <div class="card-b" style="padding:0;max-height:560px;overflow:auto">
+            <table v-if="trtRows.length"><tr><th>ID</th><th>名称</th><th>类型</th><th>编号</th><th>归属部门</th><th>状态</th><th>操作</th></tr>
+              <tr v-for="r in trtRows" :key="r.resource_id"><td>{{ r.resource_id }}</td><td>{{ r.resource_name }}</td><td>{{ r.resource_type }}</td><td>{{ r.resource_no }}</td><td>{{ r.dept_name }}</td><td><span class="tag" :class="r.status===1?'s-ok':'s-wait'">{{ r.status_name }}</span></td><td><button class="btn btn-sec btn-sm" @click="editRow('trt',r)">编辑</button> <button class="btn btn-sec btn-sm" @click="delRow('trt',r.resource_id)">删除</button></td></tr>
+            </table>
+            <div v-else class="empty">暂无数据</div>
+          </div>
+        </div>
+      </template>
+
+      <!-- 监测设备管理 -->
+      <template v-if="tab==='m_device'">
+        <div class="toolbar"><button class="btn btn-pri" @click="openModal('device')">+ 新增设备</button></div>
+        <div class="card"><div class="card-h"><div class="t">监测设备列表 <span class="sm">MDT · 共 {{ deviceRows.length }} 条</span></div></div>
+          <div class="card-b" style="padding:0;max-height:560px;overflow:auto">
+            <table v-if="deviceRows.length"><tr><th>ID</th><th>名称</th><th>编号</th><th>类型</th><th>区域</th><th>位置</th><th>状态</th><th>操作</th></tr>
+              <tr v-for="r in deviceRows" :key="r.device_id"><td>{{ r.device_id }}</td><td>{{ r.device_name }}</td><td>{{ r.device_no }}</td><td>{{ r.device_type }}</td><td>{{ r.region_name }}</td><td>{{ r.install_loc }}</td><td><span class="tag" :class="r.online_status===1?'s-ok':'s-bad'">{{ r.status_name }}</span></td><td><button class="btn btn-sec btn-sm" @click="editRow('device',r)">编辑</button> <button class="btn btn-sec btn-sm" @click="delRow('device',r.device_id)">删除</button></td></tr>
+            </table>
+            <div v-else class="empty">暂无数据</div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- 模态弹窗 -->
+  <div class="modal-mask" v-if="modal.show" @click.self="modal.show=false">
+    <div class="modal">
+      <div class="modal-h">{{ modal.title }} <span class="x" @click="modal.show=false">×</span></div>
+      <div class="modal-b">
+        <!-- 新增设施 -->
+        <template v-if="modal.type==='infra'">
+          <div class="form-row"><label>区域</label><select v-model="form.region_id"><option v-for="r in regionList" :key="r.region_id" :value="r.region_id">{{ r.region_name }}</option></select></div>
+          <div class="form-row"><label>设施类型</label><select v-model="form.infra_type"><option v-for="t in infraTypes" :key="t" :value="t">{{ t }}</option></select></div>
+          <div class="form-row"><label>设施名称</label><input v-model="form.infra_name" placeholder="如：天府大道-路灯03"></div>
+          <div class="form-row"><label>GPS 位置</label><input v-model="form.location" placeholder="(30.66,104.10)"></div>
+          <div class="form-row"><label>安装时间</label><input type="datetime-local" v-model="form.install_time"></div>
+          <div class="form-row"><label>状态</label><select v-model="form.status"><option :value="1">在用</option><option :value="2">报修</option><option :value="3">报废</option></select></div>
+        </template>
+        <!-- 新增事件 -->
+        <template v-if="modal.type==='event'">
+          <div class="form-row"><label>报告人ID（市民编号）</label><input type="number" v-model="form.citizen_id" placeholder="1-12"></div>
+          <div class="form-row"><label>区域</label><select v-model="form.region_id"><option v-for="r in regionList" :key="r.region_id" :value="r.region_id">{{ r.region_name }}</option></select></div>
+          <div class="form-row"><label>事件类型</label><select v-model="form.event_type"><option v-for="t in eventTypes" :key="t" :value="t">{{ t }}</option></select></div>
+          <div class="form-row"><label>事件标题</label><input v-model="form.event_title" placeholder="如：道路损坏报告"></div>
+          <div class="form-row"><label>事件描述</label><textarea v-model="form.event_content" placeholder="现场情况描述"></textarea></div>
+          <div class="form-row"><label>关联设施ID（可选）</label><input type="number" v-model="form.infra_id" placeholder="留空表示无关联"></div>
+        </template>
+        <!-- 新增派单 -->
+        <template v-if="modal.type==='task'">
+          <div class="form-row"><label>事件ID</label><input type="number" v-model="form.event_id" placeholder="关联的事件编号"></div>
+          <div class="form-row"><label>处理人员</label><select v-model="form.worker_id"><option v-for="w in workerList" :key="w.worker_id" :value="w.worker_id">{{ w.worker_name }}（{{ w.dept_name }}）</option></select></div>
+          <div class="form-row"><label>分配资源</label><select v-model="form.resource_id"><option :value="null">不分配</option><option v-for="r in resourceList" :key="r.resource_id" :value="r.resource_id">{{ r.resource_name }}（{{ r.resource_type }}）</option></select></div>
+          <div class="form-row"><label>任务状态</label><select v-model="form.task_status"><option :value="1">待开始</option><option :value="2">执行中</option></select></div>
+          <div class="form-row"><label>备注</label><textarea v-model="form.note" placeholder="派单备注"></textarea></div>
+        </template>
+        <!-- 市民表单 -->
+        <template v-if="modal.type==='citizen'">
+          <div class="form-row"><label>姓名</label><input v-model="form.real_name" placeholder="市民姓名"></div>
+          <div class="form-row"><label>电话</label><input v-model="form.phone" placeholder="手机号"></div>
+          <div class="form-row"><label>邮箱</label><input v-model="form.email" placeholder="邮箱地址"></div>
+        </template>
+        <!-- 部门表单 -->
+        <template v-if="modal.type==='dept'">
+          <div class="form-row"><label>部门名称</label><input v-model="form.dept_name" placeholder="如：市政设施科"></div>
+          <div class="form-row"><label>部门电话</label><input v-model="form.dept_phone" placeholder="联系电话"></div>
+          <div class="form-row"><label>部门地址</label><input v-model="form.dept_addr" placeholder="办公地址"></div>
+          <div class="form-row"><label>负责人</label><input v-model="form.manager" placeholder="负责人姓名"></div>
+        </template>
+        <!-- 维修人员表单 -->
+        <template v-if="modal.type==='worker'">
+          <div class="form-row"><label>所属部门</label><select v-model="form.dept_id"><option v-for="d in deptList" :key="d.dept_id" :value="d.dept_id">{{ d.dept_name }}</option></select></div>
+          <div class="form-row"><label>姓名</label><input v-model="form.worker_name" placeholder="维修人员姓名"></div>
+          <div class="form-row"><label>电话</label><input v-model="form.worker_phone" placeholder="手机号"></div>
+          <div class="form-row"><label>岗位</label><input v-model="form.post" placeholder="如：维修工"></div>
+          <div class="form-row"><label>入职日期</label><input type="date" v-model="form.hire_date"></div>
+        </template>
+        <!-- 维修资源表单 -->
+        <template v-if="modal.type==='trt'">
+          <div class="form-row"><label>资源名称</label><input v-model="form.resource_name" placeholder="如：维修车辆-5"></div>
+          <div class="form-row"><label>资源类型</label><input v-model="form.resource_type" placeholder="如：车辆/平台/工具"></div>
+          <div class="form-row"><label>资源编号</label><input v-model="form.resource_no" placeholder="如：R-05"></div>
+          <div class="form-row"><label>归属部门</label><select v-model="form.dept_id"><option v-for="d in deptList" :key="d.dept_id" :value="d.dept_id">{{ d.dept_name }}</option></select></div>
+          <div class="form-row"><label>状态</label><select v-model="form.status"><option :value="1">可用</option><option :value="2">使用中</option><option :value="3">维修中</option></select></div>
+        </template>
+        <!-- 监测设备表单 -->
+        <template v-if="modal.type==='device'">
+          <div class="form-row"><label>区域</label><select v-model="form.region_id"><option v-for="r in regionList" :key="r.region_id" :value="r.region_id">{{ r.region_name }}</option></select></div>
+          <div class="form-row"><label>设备名称</label><input v-model="form.device_name" placeholder="如：监测仪-13"></div>
+          <div class="form-row"><label>设备编号</label><input v-model="form.device_no" placeholder="如：MD-13"></div>
+          <div class="form-row"><label>设备类型</label><select v-model="form.device_type"><option>空气质量</option><option>噪音</option><option>水质</option><option>温湿度</option></select></div>
+          <div class="form-row"><label>安装位置</label><input v-model="form.install_loc" placeholder="(30.66,104.10)"></div>
+          <div class="form-row"><label>在线状态</label><select v-model="form.online_status"><option :value="1">在线</option><option :value="0">离线</option></select></div>
+        </template>
+      </div>
+      <div class="modal-f"><button class="btn btn-sec" @click="modal.show=false">取消</button><button class="btn btn-pri" @click="submitForm">确定</button></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" :class="toast.ok?'ok':'err'" v-if="toast.show">{{ toast.msg }}</div>
+</div>
+
+<script>
+const { createApp, ref, reactive, nextTick, onMounted } = Vue;
+
+const TABLES = [
+  { code:'RT', name:'区域表', fields:[{n:'region_id',t:'INT',pk:true},{n:'region_name',t:'VARCHAR(50)'},{n:'parent_id',t:'INT',fk:true},{n:'region_level',t:'TINYINT'},{n:'location_desc',t:'VARCHAR(200)'},{n:'create_time',t:'DATETIME'}]},
+  { code:'IT', name:'基础设施表', fields:[{n:'infra_id',t:'INT',pk:true},{n:'region_id',t:'INT',fk:true},{n:'infra_type',t:'VARCHAR(30)'},{n:'infra_name',t:'VARCHAR(100)'},{n:'location',t:'VARCHAR(200)'},{n:'install_time',t:'DATETIME'},{n:'status',t:'TINYINT'}]},
+  { code:'CT', name:'市民表', fields:[{n:'citizen_id',t:'INT',pk:true},{n:'phone',t:'VARCHAR(20)'},{n:'real_name',t:'VARCHAR(30)'},{n:'email',t:'VARCHAR(100)'},{n:'register_time',t:'DATETIME'}]},
+  { code:'DT', name:'部门表', fields:[{n:'dept_id',t:'INT',pk:true},{n:'dept_name',t:'VARCHAR(80)'},{n:'dept_phone',t:'VARCHAR(20)'},{n:'dept_addr',t:'VARCHAR(200)'},{n:'manager',t:'VARCHAR(30)'}]},
+  { code:'WT', name:'维修人员表', fields:[{n:'worker_id',t:'INT',pk:true},{n:'dept_id',t:'INT',fk:true},{n:'worker_name',t:'VARCHAR(30)'},{n:'worker_phone',t:'VARCHAR(20)'},{n:'post',t:'VARCHAR(50)'},{n:'hire_date',t:'DATE'}]},
+  { code:'TRT', name:'维修资源表', fields:[{n:'resource_id',t:'INT',pk:true},{n:'resource_name',t:'VARCHAR(80)'},{n:'resource_type',t:'VARCHAR(30)'},{n:'resource_no',t:'VARCHAR(50)'},{n:'status',t:'TINYINT'},{n:'dept_id',t:'INT',fk:true}]},
+  { code:'ERT', name:'事件上报表', fields:[{n:'event_id',t:'INT',pk:true},{n:'citizen_id',t:'INT',fk:true},{n:'region_id',t:'INT',fk:true},{n:'infra_id',t:'INT',fk:true},{n:'event_title',t:'VARCHAR(100)'},{n:'event_content',t:'TEXT'},{n:'event_type',t:'VARCHAR(30)'},{n:'report_time',t:'DATETIME'},{n:'event_status',t:'TINYINT'}]},
+  { code:'TST', name:'任务调度表', fields:[{n:'task_id',t:'INT',pk:true},{n:'event_id',t:'INT',fk:true},{n:'worker_id',t:'INT',fk:true},{n:'resource_id',t:'INT',fk:true},{n:'dept_id',t:'INT',fk:true},{n:'task_start',t:'DATETIME'},{n:'task_end',t:'DATETIME'},{n:'task_status',t:'TINYINT'},{n:'note',t:'TEXT'}]},
+  { code:'MRT', name:'维修记录表', fields:[{n:'record_id',t:'INT',pk:true},{n:'task_id',t:'INT',fk:true},{n:'infra_id',t:'INT',fk:true},{n:'worker_id',t:'INT',fk:true},{n:'repair_content',t:'TEXT'},{n:'repair_time',t:'DATETIME'},{n:'repair_cost',t:'DECIMAL(10,2)'},{n:'result',t:'TINYINT'}]},
+  { code:'MDT', name:'监测设备表', fields:[{n:'device_id',t:'INT',pk:true},{n:'region_id',t:'INT',fk:true},{n:'device_name',t:'VARCHAR(80)'},{n:'device_no',t:'VARCHAR(50)'},{n:'device_type',t:'VARCHAR(30)'},{n:'install_loc',t:'VARCHAR(200)'},{n:'online_status',t:'TINYINT'},{n:'install_time',t:'DATETIME'}]},
+  { code:'EDT', name:'环境数据表', fields:[{n:'data_id',t:'BIGINT',pk:true},{n:'device_id',t:'INT',fk:true},{n:'pm25',t:'FLOAT'},{n:'pm10',t:'FLOAT'},{n:'noise',t:'FLOAT'},{n:'temperature',t:'FLOAT'},{n:'humidity',t:'FLOAT'},{n:'collect_time',t:'DATETIME'}]},
+  { code:'ST', name:'数据统计表', fields:[{n:'stat_id',t:'INT',pk:true},{n:'stat_date',t:'DATE'},{n:'region_id',t:'INT',fk:true},{n:'event_total',t:'INT'},{n:'event_finish',t:'INT'},{n:'infra_broken',t:'INT'},{n:'avg_noise',t:'FLOAT'},{n:'avg_pm25',t:'FLOAT'},{n:'stat_create',t:'DATETIME'}]},
+];
+
+const COLORS = ['#ff5b5b','#4a8cff','#ff9f43','#9b6dff','#36c46b','#2d3a5c','#e04848','#5a9cff'];
+
+async function api(url, opts){
+  opts = opts || {};
+  opts.cache = 'no-store';
+  const r = await fetch(url, opts);
+  if(!r.ok) throw new Error('API '+r.status);
+  return r.json();
+}
+function pad(n){return n<10?'0'+n:''+n;}
+function dtStr(d){return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+' '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());}
+
+createApp({
+  setup(){
+    const tab = ref('overview');
+    const now = ref(dtStr(new Date()));
+    setInterval(()=>now.value=dtStr(new Date()),1000);
+    const tables = TABLES;
+    const selTable = ref('RT');
+    const toast = reactive({show:false,msg:'',ok:false});
+    function showToast(msg,ok=true){toast.msg=msg;toast.ok=ok;toast.show=true;setTimeout(()=>toast.show=false,2500);}
+
+    const ov = reactive({infra_total:0,infra_ok:0,infra_bad:0,ev_total:0,ev_done:0,ev_rate:0,wk_total:0,wk_busy:0,wk_idle:0,dev_total:0,dev_online:0,dev_offline:0});
+    const infraRows = ref([]); const eventRows = ref([]); const taskRows = ref([]); const devRows = ref([]);
+    const regionList = ref([]); const workerList = ref([]); const resourceList = ref([]); const deptList = ref([]);
+    const citizenRows = ref([]); const deptRows = ref([]); const workerRows = ref([]); const trtRows = ref([]); const deviceRows = ref([]);
+    const infraTypes = ref([]); const eventTypes = ref([]);
+    const infraFilter = reactive({region:'',type:''});
+
+    const infraSc = s=>({1:'s-ok',2:'s-wait',3:'s-bad'}[s]||'s-wait');
+    const evSc = s=>({1:'s-wait',2:'s-run',3:'s-ok'}[s]||'s-wait');
+    const taskSc = s=>({1:'s-wait',2:'s-run',3:'s-ok'}[s]||'s-wait');
+
+    const q1 = reactive({region:'高新区',type:'',result:[],loading:false});
+    const q2 = reactive({s:'2026-11-01',e:'2026-11-12',type:'',result:[],loading:false});
+    const q3 = reactive({s:'2026-11-01',e:'2026-11-12',result:[],loading:false});
+    const q4 = reactive({s:'2026-11-01',e:'2026-11-12',stat:[],env:[],loading:false});
+
+    const modal = reactive({show:false,type:'',title:''});
+    const form = reactive({});
+
+    const editId = ref(null);
+    function openModal(type){
+      Object.keys(form).forEach(k=>delete form[k]);
+      editId.value = null;
+      if(type==='infra'){Object.assign(form,{region_id:1,infra_type:'道路',infra_name:'',location:'',install_time:'',status:1});modal.title='新增基础设施';}
+      if(type==='event'){Object.assign(form,{citizen_id:1,region_id:1,event_type:'道路损坏',event_title:'',event_content:'',infra_id:null,event_status:1});modal.title='新增事件上报';}
+      if(type==='task'){Object.assign(form,{event_id:'',worker_id:1,resource_id:null,task_status:1,note:''});modal.title='新增派单';}
+      if(type==='citizen'){Object.assign(form,{real_name:'',phone:'',email:''});modal.title='新增市民';}
+      if(type==='dept'){Object.assign(form,{dept_name:'',dept_phone:'',dept_addr:'',manager:''});modal.title='新增部门';}
+      if(type==='worker'){Object.assign(form,{dept_id:1,worker_name:'',worker_phone:'',post:'维修工',hire_date:''});modal.title='新增维修人员';}
+      if(type==='trt'){Object.assign(form,{resource_name:'',resource_type:'车辆',resource_no:'',dept_id:1,status:1});modal.title='新增维修资源';}
+      if(type==='device'){Object.assign(form,{region_id:1,device_name:'',device_no:'',device_type:'空气质量',install_loc:'',online_status:1});modal.title='新增监测设备';}
+      modal.type=type;modal.show=true;
+    }
+    function editInfra(r){openModal('infra');editId.value=r.infra_id;Object.assign(form,{region_id:regionList.value.find(x=>x.region_name===r.region_name)?.region_id||1,infra_type:r.infra_type,infra_name:r.infra_name,location:r.location,install_time:r.install_time,status:r.status});modal.title='编辑设施';}
+    function editEvent(r){openModal('event');editId.value=r.event_id;Object.assign(form,{citizen_id:r.citizen_id||1,region_id:regionList.value.find(x=>x.region_name===r.region)?.region_id||1,event_type:r.event_type,event_title:r.event_title,event_content:r.event_content||'',infra_id:r.infra_id,event_status:r.event_status});modal.title='编辑事件';}
+    function editRow(type,r){
+      openModal(type);
+      if(type==='citizen'){editId.value=r.citizen_id;Object.assign(form,{real_name:r.real_name,phone:r.phone,email:r.email});}
+      if(type==='dept'){editId.value=r.dept_id;Object.assign(form,{dept_name:r.dept_name,dept_phone:r.dept_phone,dept_addr:r.dept_addr,manager:r.manager});}
+      if(type==='worker'){editId.value=r.worker_id;Object.assign(form,{dept_id:r.dept_id,worker_name:r.worker_name,worker_phone:r.worker_phone,post:r.post,hire_date:r.hire_date});}
+      if(type==='trt'){editId.value=r.resource_id;Object.assign(form,{resource_name:r.resource_name,resource_type:r.resource_type,resource_no:r.resource_no,dept_id:r.dept_id,status:r.status});}
+      if(type==='device'){editId.value=r.device_id;Object.assign(form,{region_id:regionList.value.find(x=>x.region_name===r.region_name)?.region_id||1,device_name:r.device_name,device_no:r.device_no,device_type:r.device_type,install_loc:r.install_loc,online_status:r.online_status});}
+      modal.title='编辑';
+    }
+    async function delRow(type,id){
+      if(!confirm('确认删除？'))return;
+      const urlMap={citizen:'/api/citizens',dept:'/api/depts',worker:'/api/workers',trt:'/api/trt',device:'/api/devices'};
+      try{const r=await api(`${urlMap[type]}/${id}`,{method:'DELETE'});if(r.code){showToast(r.msg,false);}else{showToast('已删除');reloadMgmt(type);}}catch(e){showToast('删除失败：'+e.message,false);}
+    }
+    function reloadMgmt(type){
+      if(type==='citizen')loadCitizens();
+      if(type==='dept')loadDepts();
+      if(type==='worker')loadWorkers();
+      if(type==='trt')loadTrt();
+      if(type==='device')loadDevices();
+    }
+    async function submitForm(){
+      try{
+        const post=(url)=>api(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)});
+        const put=(url)=>api(url,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(form)});
+        if(modal.type==='infra'){
+          const r=editId.value?await put(`/api/infra/${editId.value}`):await post('/api/infra');
+          if(r.code){showToast(r.msg,false);return;}
+          showToast(editId.value?'设施已更新':'设施已新增');loadInfra();
+        }
+        if(modal.type==='event'){
+          let r;
+          if(editId.value){r=await put(`/api/events/${editId.value}`);}
+          else{form.report_time=new Date().toISOString().slice(0,19);form.event_status=1;r=await post('/api/events');}
+          if(r.code){showToast(r.msg,false);return;}
+          showToast(editId.value?'事件已更新':'事件已上报');loadEvent();
+        }
+        if(modal.type==='task'){
+          form.task_start=new Date().toISOString().slice(0,19);
+          const w=workerList.value.find(x=>x.worker_id===form.worker_id);form.dept_id=w?w.dept_id:1;
+          const r=await post('/api/tasks');
+          if(r.code){showToast(r.msg,false);return;}
+          showToast('任务已派单');loadDispatch();
+        }
+        if(modal.type==='citizen'){
+          const r=editId.value?await put(`/api/citizens/${editId.value}`):await post('/api/citizens');
+          if(r.code){showToast(r.msg,false);return;}
+          showToast(editId.value?'已更新':'已新增');loadCitizens();
+        }
+        if(modal.type==='dept'){
+          const r=editId.value?await put(`/api/depts/${editId.value}`):await post('/api/depts');
+          if(r.code){showToast(r.msg,false);return;}
+          showToast(editId.value?'已更新':'已新增');loadDepts();
+        }
+        if(modal.type==='worker'){
+          const r=editId.value?await put(`/api/workers/${editId.value}`):await post('/api/workers');
+          if(r.code){showToast(r.msg,false);return;}
+          showToast(editId.value?'已更新':'已新增');loadWorkers();
+        }
+        if(modal.type==='trt'){
+          const r=editId.value?await put(`/api/trt/${editId.value}`):await post('/api/trt');
+          if(r.code){showToast(r.msg,false);return;}
+          showToast(editId.value?'已更新':'已新增');loadTrt();
+        }
+        if(modal.type==='device'){
+          const r=editId.value?await put(`/api/devices/${editId.value}`):await post('/api/devices');
+          if(r.code){showToast(r.msg,false);return;}
+          showToast(editId.value?'已更新':'已新增');loadDevices();
+        }
+        modal.show=false;
+      }catch(e){showToast('提交失败：'+e.message,false);}
+    }
+    async function delInfra(id){
+      if(!confirm('确认删除该设施？'))return;
+      try{const r=await api(`/api/infra/${id}`,{method:'DELETE'});if(r.code){showToast(r.msg,false);}else{showToast('已删除');loadInfra();}}catch(e){showToast('删除失败：'+e.message,false);}
+    }
+    async function delEvent(id){
+      if(!confirm('确认删除该事件？'))return;
+      try{const r=await api(`/api/events/${id}`,{method:'DELETE'});if(r.code){showToast(r.msg,false);}else{showToast('已删除');loadEvent();}}catch(e){showToast('删除失败：'+e.message,false);}
+    }
+    async function finishTask(id){
+      try{await api(`/api/tasks/${id}`,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({task_status:3})});showToast('任务已完成');loadDispatch();}catch(e){showToast('操作失败',false);}
+    }
+    async function loadCitizens(){try{citizenRows.value=await api('/api/citizens');}catch(e){showToast('加载失败',false);}}
+    async function loadDepts(){try{deptRows.value=await api('/api/depts/full');}catch(e){showToast('加载失败',false);}}
+    async function loadWorkers(){try{workerRows.value=await api('/api/workers');}catch(e){showToast('加载失败',false);}}
+    async function loadTrt(){try{trtRows.value=await api('/api/trt');}catch(e){showToast('加载失败',false);}}
+    async function loadDevices(){try{deviceRows.value=await api('/api/devices');}catch(e){showToast('加载失败',false);}}
+
+    async function loadOverview(){
+      try{
+        Object.assign(ov, await api('/api/overview'));
+        const c = await api('/api/overview/charts');
+        nextTick(()=>{
+          const t=echarts.init(document.getElementById('c_trend'));
+          t.setOption({tooltip:{trigger:'axis'},grid:{left:40,right:20,top:30,bottom:30},xAxis:{type:'category',data:c.trend.map(x=>x.d),axisLine:{lineStyle:{color:'#dfe4ea'}}},yAxis:{type:'value',splitLine:{lineStyle:{color:'#f0f3f7'}}},series:[{name:'报告',type:'line',smooth:true,data:c.trend.map(x=>x.total),itemStyle:{color:'#ff5b5b'},areaStyle:{color:'rgba(255,91,91,.12)'}},{name:'已处理',type:'line',smooth:true,data:c.trend.map(x=>x.done),itemStyle:{color:'#4a8cff'}}]});
+          const ty=echarts.init(document.getElementById('c_type'));
+          ty.setOption({tooltip:{trigger:'item'},legend:{bottom:0},series:[{type:'pie',radius:['45%','70%'],center:['50%','45%'],data:c.types.map((x,i)=>({name:x.name,value:x.value,itemStyle:{color:COLORS[i]}}))}]});
+        });
+      }catch(e){showToast('加载失败：'+e.message,false);}
+    }
+    function renderModel(){
+      nextTick(()=>{
+        const c=echarts.init(document.getElementById('c_er'));
+        const nodes=[{name:'RT',x:300,y:50},{name:'IT',x:120,y:180},{name:'CT',x:520,y:180},{name:'DT',x:120,y:320},{name:'WT',x:300,y:320},{name:'TRT',x:520,y:320},{name:'ERT',x:300,y:180},{name:'TST',x:300,y:450},{name:'MRT',x:120,y:450},{name:'MDT',x:520,y:450},{name:'EDT',x:680,y:450},{name:'ST',x:680,y:180}];
+        const links=[{source:'IT',target:'RT'},{source:'WT',target:'DT'},{source:'TRT',target:'DT'},{source:'ERT',target:'CT'},{source:'ERT',target:'RT'},{source:'ERT',target:'IT'},{source:'TST',target:'ERT'},{source:'TST',target:'WT'},{source:'TST',target:'TRT'},{source:'TST',target:'DT'},{source:'MRT',target:'TST'},{source:'MRT',target:'IT'},{source:'MRT',target:'WT'},{source:'MDT',target:'RT'},{source:'EDT',target:'MDT'},{source:'ST',target:'RT'}];
+        c.setOption({series:[{type:'graph',layout:'none',symbolSize:46,roam:true,label:{show:true,fontSize:13,fontWeight:'bold'},edgeSymbol:['none','arrow'],edgeSymbolSize:8,itemStyle:{color:'#ff5b5b',borderColor:'#fff',borderWidth:2},lineStyle:{color:'#9aa5b1',curveness:0.1,width:1.5},data:nodes.map((n,i)=>({...n,itemStyle:{color:COLORS[i%COLORS.length]}})),links:links}]});
+      });
+    }
+    async function loadInfra(){
+      try{
+        const params=new URLSearchParams();
+        if(infraFilter.region)params.set('region',infraFilter.region);
+        if(infraFilter.type)params.set('type',infraFilter.type);
+        infraRows.value = await api('/api/infra?'+params);
+        const s = await api('/api/infra/stats');
+        nextTick(()=>{
+          const a=echarts.init(document.getElementById('c_itype'));
+          a.setOption({tooltip:{trigger:'item'},legend:{bottom:0},series:[{type:'pie',radius:'65%',center:['50%','45%'],data:s.by_type.map((x,i)=>({name:x.name,value:x.value,itemStyle:{color:COLORS[i]}}))}]});
+          const b=echarts.init(document.getElementById('c_ireg'));
+          b.setOption({tooltip:{trigger:'axis'},grid:{left:50,right:20,top:20,bottom:30},xAxis:{type:'category',data:s.by_reg.map(x=>x.name),axisLine:{lineStyle:{color:'#dfe4ea'}}},yAxis:{type:'value',splitLine:{lineStyle:{color:'#f0f3f7'}}},series:[{type:'bar',data:s.by_reg.map(x=>x.value),itemStyle:{color:'#ff5b5b',borderRadius:[4,4,0,0]}}]});
+        });
+      }catch(e){showToast('加载失败：'+e.message,false);}
+    }
+    async function loadEvent(){
+      try{
+        eventRows.value = await api('/api/events');
+        const s = await api('/api/events/stats');
+        nextTick(()=>{
+          const a=echarts.init(document.getElementById('c_etype'));
+          a.setOption({tooltip:{trigger:'item'},legend:{bottom:0},series:[{type:'pie',radius:['40%','65%'],center:['50%','45%'],data:s.by_type.map((x,i)=>({name:x.name,value:x.value,itemStyle:{color:COLORS[i]}}))}]});
+          const b=echarts.init(document.getElementById('c_ereg'));
+          b.setOption({tooltip:{trigger:'axis'},grid:{left:50,right:20,top:20,bottom:30},xAxis:{type:'category',data:s.by_reg.map(x=>x.name),axisLine:{lineStyle:{color:'#dfe4ea'}}},yAxis:{type:'value',splitLine:{lineStyle:{color:'#f0f3f7'}}},series:[{type:'bar',data:s.by_reg.map(x=>x.value),itemStyle:{color:'#4a8cff',borderRadius:[4,4,0,0]}}]});
+        });
+      }catch(e){showToast('加载失败：'+e.message,false);}
+    }
+    async function loadDispatch(){
+      try{
+        taskRows.value = await api('/api/tasks');
+        const s = await api('/api/tasks/stats');
+        nextTick(()=>{
+          const a=echarts.init(document.getElementById('c_rtype'));
+          a.setOption({tooltip:{trigger:'item'},legend:{bottom:0},series:[{type:'pie',radius:'65%',center:['50%','45%'],data:s.rtype.map((x,i)=>({name:x.name,value:x.value,itemStyle:{color:COLORS[i]}}))}]});
+          const b=echarts.init(document.getElementById('c_tstat'));
+          const ts=s.tstat;
+          b.setOption({tooltip:{trigger:'item'},legend:{bottom:0},series:[{type:'pie',radius:['40%','65%'],center:['50%','45%'],data:[{name:'已完成',value:ts.done||0,itemStyle:{color:'#36c46b'}},{name:'执行中',value:ts.running||0,itemStyle:{color:'#ff9f43'}},{name:'待开始',value:ts.wait||0,itemStyle:{color:'#ff5b5b'}}]}]});
+        });
+      }catch(e){showToast('加载失败：'+e.message,false);}
+    }
+    async function loadEnv(){
+      try{
+        devRows.value = await api('/api/devices');
+        const t = await api('/api/env/trend');
+        nextTick(()=>{
+          const a=echarts.init(document.getElementById('c_pm'));
+          a.setOption({tooltip:{trigger:'axis'},legend:{top:0},grid:{left:45,right:20,top:30,bottom:30},xAxis:{type:'category',data:t.map(x=>x.h),axisLine:{lineStyle:{color:'#dfe4ea'}}},yAxis:{type:'value',splitLine:{lineStyle:{color:'#f0f3f7'}}},series:[{name:'PM2.5',type:'line',smooth:true,data:t.map(x=>x.pm25),itemStyle:{color:'#ff5b5b'}},{name:'PM10',type:'line',smooth:true,data:t.map(x=>x.pm10),itemStyle:{color:'#4a8cff'}}]});
+          const b=echarts.init(document.getElementById('c_noise'));
+          b.setOption({tooltip:{trigger:'axis'},legend:{top:0},grid:{left:45,right:50,top:30,bottom:30},xAxis:{type:'category',data:t.map(x=>x.h),axisLine:{lineStyle:{color:'#dfe4ea'}}},yAxis:[{type:'value',splitLine:{lineStyle:{color:'#f0f3f7'}}},{type:'value'}],series:[{name:'噪音(dB)',type:'line',smooth:true,data:t.map(x=>x.noise),itemStyle:{color:'#ff9f43'}},{name:'温度(℃)',type:'line',smooth:true,data:t.map(x=>x.temp),itemStyle:{color:'#ff5b5b'}},{name:'湿度(%)',type:'line',smooth:true,yAxisIndex:1,data:t.map(x=>x.hum),itemStyle:{color:'#9b6dff'}}]});
+        });
+      }catch(e){showToast('加载失败：'+e.message,false);}
+    }
+    async function runQ1(){
+      q1.loading=true;
+      try{q1.result=await api(`/api/q1?region=${encodeURIComponent(q1.region)}&type=${encodeURIComponent(q1.type)}`);}catch(e){showToast('查询失败：'+e.message,false);}finally{q1.loading=false;}
+    }
+    async function runQ2(){
+      q2.loading=true;
+      try{q2.result=await api(`/api/q2?start=${q2.s}&end=${q2.e}&type=${encodeURIComponent(q2.type)}`);}catch(e){showToast('查询失败：'+e.message,false);}finally{q2.loading=false;}
+    }
+    async function runQ3(){
+      q3.loading=true;
+      try{
+        q3.result=await api(`/api/q3?start=${q3.s}&end=${q3.e}`);
+        nextTick(()=>{
+          const names=q3.result.map(r=>r.worker);
+          const a=echarts.init(document.getElementById('c_q3a'));
+          a.setOption({tooltip:{trigger:'axis'},legend:{top:0},grid:{left:45,right:20,top:30,bottom:30},xAxis:{type:'category',data:names,axisLine:{lineStyle:{color:'#dfe4ea'}}},yAxis:{type:'value',splitLine:{lineStyle:{color:'#f0f3f7'}}},series:[{name:'任务数',type:'bar',data:q3.result.map(r=>r.total),itemStyle:{color:'#ff5b5b',borderRadius:[4,4,0,0]}},{name:'已完成',type:'bar',data:q3.result.map(r=>r.done),itemStyle:{color:'#36c46b',borderRadius:[4,4,0,0]}}]});
+          const b=echarts.init(document.getElementById('c_q3b'));
+          b.setOption({tooltip:{trigger:'axis'},grid:{left:45,right:20,top:20,bottom:30},xAxis:{type:'category',data:names,axisLine:{lineStyle:{color:'#dfe4ea'}}},yAxis:{type:'value',splitLine:{lineStyle:{color:'#f0f3f7'}}},series:[{type:'bar',data:q3.result.map(r=>r.avg_min||0),itemStyle:{color:'#4a8cff',borderRadius:[4,4,0,0]}}]});
+        });
+      }catch(e){showToast('统计失败：'+e.message,false);}finally{q3.loading=false;}
+    }
+    async function runQ4(){
+      q4.loading=true;
+      try{
+        const d=await api(`/api/q4?start=${q4.s}&end=${q4.e}`);
+        q4.stat=d.stat;q4.env=d.env;
+        nextTick(()=>{
+          const days=[...new Set(d.env.map(x=>x.d))];
+          const regs=[...new Set(d.env.map(x=>x.region))];
+          const pm=echarts.init(document.getElementById('c_q4pm'));
+          pm.setOption({tooltip:{trigger:'axis'},legend:{top:0},grid:{left:45,right:20,top:30,bottom:30},xAxis:{type:'category',data:days},yAxis:{type:'value'},series:regs.map((r,i)=>({name:r,type:'line',smooth:true,data:days.map(dd=>{const x=d.env.find(e=>e.region===r&&e.d===dd);return x?x.pm25:null;}),itemStyle:{color:COLORS[i%COLORS.length]}}))});
+          const n=echarts.init(document.getElementById('c_q4n'));
+          n.setOption({tooltip:{trigger:'axis'},legend:{top:0},grid:{left:45,right:20,top:30,bottom:30},xAxis:{type:'category',data:days},yAxis:{type:'value'},series:regs.map((r,i)=>({name:r,type:'line',smooth:true,data:days.map(dd=>{const x=d.env.find(e=>e.region===r&&e.d===dd);return x?x.noise:null;}),itemStyle:{color:COLORS[i%COLORS.length]}}))});
+        });
+      }catch(e){showToast('分析失败：'+e.message,false);}finally{q4.loading=false;}
+    }
+
+    function go(t){
+      tab.value=t;
+      if(t==='overview')loadOverview();
+      if(t==='model')renderModel();
+      if(t==='infra')loadInfra();
+      if(t==='event')loadEvent();
+      if(t==='dispatch')loadDispatch();
+      if(t==='env')loadEnv();
+      if(t==='q1'&&!q1.result.length)runQ1();
+      if(t==='q2'&&!q2.result.length)runQ2();
+      if(t==='q3'&&!q3.result.length)runQ3();
+      if(t==='q4'&&!q4.stat.length)runQ4();
+      if(t==='m_citizen')loadCitizens();
+      if(t==='m_dept')loadDepts();
+      if(t==='m_worker')loadWorkers();
+      if(t==='m_trt')loadTrt();
+      if(t==='m_device')loadDevices();
+    }
+
+    onMounted(async()=>{
+      try{
+        regionList.value=await api('/api/regions');
+        workerList.value=await api('/api/workers');
+        resourceList.value=await api('/api/resources');
+        deptList.value=await api('/api/depts');
+        infraTypes.value=await api('/api/infra-types');
+        eventTypes.value=await api('/api/event-types');
+        if(regionList.value.length)q1.region=regionList.value[0].region_name;
+      }catch(e){showToast('后端连接失败，请确认 Flask 已启动',false);}
+      loadOverview();
+    });
+
+    return {tab,now,tables,selTable,toast,ov,infraRows,eventRows,taskRows,devRows,regionList,workerList,resourceList,deptList,infraTypes,eventTypes,infraFilter,infraSc,evSc,taskSc,q1,runQ1,q2,runQ2,q3,runQ3,q4,runQ4,go,modal,form,openModal,submitForm,delInfra,delEvent,finishTask,editInfra,editEvent,editRow,delRow,citizenRows,deptRows,workerRows,trtRows,deviceRows};
+  }
+}).mount('#app');
+</script>
+</body>
+</html>
